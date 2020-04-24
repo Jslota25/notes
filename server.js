@@ -5,7 +5,7 @@ const fs = require("fs");
 const util = require("util");
 const uuid = require("uuid");
 
-//Async functions
+//Async Functions
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
 
@@ -31,3 +31,39 @@ app.get("/notes", function (req, res) {
 app.get("*", function (req, res) {
     res.sendFile(path.join(__dirname, "public", "index.html"));
   });
+
+// Reads json file and returns notes
+app.get("/api/notes", function (req, res) {
+    readFileAsync("./db/db.json", "utf8")
+    .then (data => {
+      let notesJSON = JSON.parse(data)
+        res.json(notesJSON)
+      })
+    });
+
+//Adds note to json file and returns new note to the user
+app.post("/api/notes", function (req, res) {
+    let newNote = req.body
+    let id = uuid.v4()
+    newNote.id = id
+    readFileAsync("./db/db.json", "utf8").then (data =>{
+      let notesJSON = JSON.parse(data);
+      notesJSON.push(newNote);
+      writeFileAsync("./db/db.json", JSON.stringify(notesJSON)).then(() => {
+        res.json(newNote);
+      });
+    });
+  });
+
+// Deletes note from json file and returns new note to the user
+app.delete("/api/notes/:id", function (req, res) {
+    readFileAsync("./db/db.json", "utf8").then (data =>{
+      let notesJSON = JSON.parse(data);
+      let remainNotes = notesJSON.filter(note => note.id !== req.params.id);
+      notesJSON = remainNotes;
+      writeFileAsync("./db/db.json", JSON.stringify(notesJSON)).then(() => {
+        res.json(notesJSON);
+      });
+    });
+  });
+  
